@@ -20,21 +20,6 @@
         font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
       }
 
-      .legend {
-        background-color: #fff;
-        border-radius: 3px;
-        bottom: 40px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.10);
-        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-        padding: 10px;
-        position: absolute;
-        left: 10px;
-        z-index: 1;
-      }
-      .legend h4 {
-        margin: 0 0 10px;
-      }
-
       .map-overlay {
         background-color: #fff;
         border-radius: 3px;
@@ -60,6 +45,7 @@
       }
       .filter-group input[type=checkbox]:first-child + label {
         border-radius: 3px 3px 0 0;
+        cursor: default;
       }
       .filter-group label:last-child {
         border-radius: 0 0 3px 3px;
@@ -72,16 +58,14 @@
         background-color: #ffffff;
         display: block;
         cursor: pointer;
-        padding: 10px;
+        padding: 5px;
         border-bottom: 1px solid rgba(0, 0, 0, 0.25);
       }
       .filter-group input[type=checkbox] + label {
-/*        background-color: #3386c0;
-*/        opacity: 0.8;
+        opacity: 0.75;
       }
       .filter-group input[type=checkbox]:checked + label {
-/*        background-color: #ffffff;
-*/        opacity: 1;
+        opacity: 1;
       }
       /*.filter-group input[type=checkbox]:checked + label:before {
         content: '✔';
@@ -93,16 +77,6 @@
     <nav id='filter-group' class='filter-group'></nav>
 
     <div class='map-overlay' id='features'><h2>Bay Area Bike Shares</h2><div id='pd'><p>Hover over a bike or dock for information!</p></div></div>
-
-
-    <!-- <div id='legend' class='legend'>
-      <h4>Legend</h4>
-      <div><img src="harbor-blue-11.svg"> Ford GoBike Docking Station</div>
-      <div><img src="harbor-black-11.svg" > JUMP e-Bike Charging Station</div>
-      <div><img src="bicycle-black-15.svg"> Available JUMP e-Bike</div>
-      <div><img src="harbor-green-11.svg"> BRite Bike Docking Station</div>
-      <div><img src="bicycle-green-15.svg"> Available BRite Bike</div>
-    </div> -->
 
     <script>
       mapboxgl.accessToken = 'pk.eyJ1IjoiamFycm9kaHN1IiwiYSI6ImNqczNxNHhtNjAyOXE0NG8xcnJpeW1hcXUifQ.SoYjjAcKto7ld-X19RE0KQ';
@@ -168,6 +142,13 @@
         map.addSource('jumpstation', { type: 'geojson', data: getData('https://sf.jumpbikes.com/opendata/station_information.json', 'stations')});
          
 
+        var input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = true;
+        filterGroup.appendChild(input);
+        var label = document.createElement('label');
+        label.innerHTML = '<div style="text-align:center;"><font size = "3">LEGEND</font></div><div style="text-align:center;"><font size = "0.8">click to hide layer</font></div>';
+        filterGroup.appendChild(label);
         // Add a layer for this symbol type if it hasn't been added already.
         ['gobike', 'jumpbike', 'jumpstation', 'britebike', 'britestation'].forEach(function(layer) {
           if (!map.getLayer(layer)) {
@@ -268,7 +249,19 @@
           .setHTML(description) //change to make popup longer
           .addTo(map);
         });
-        map.on('mouseleave', 'gobike', function() {
+    //     map.on('click', 'gobike', function (e) {
+    //     	popup.remove();
+				// 	var coordinates = e.features[0].geometry.coordinates.slice();
+				// 	var description = e.features[0].properties.name;
+				// 	while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+				// 	coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+				// 	}
+				// 	new mapboxgl.Popup()
+				// 	.setLngLat(coordinates)
+				// 	.setHTML(description)
+				// 	.addTo(map);
+				// });
+		    map.on('mouseleave', 'gobike', function() {
           map.getCanvas().style.cursor = '';
           popup.remove();
         });
