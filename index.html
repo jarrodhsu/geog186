@@ -46,35 +46,78 @@
         right: 30px;
         z-index: 1;
       }
+
+
+      .filter-group {
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        font-weight: 600;
+        position: absolute;
+        bottom: 40px;
+        left: 10px;
+        z-index: 1;
+        border-radius: 3px;
+        color: #000;
+      }
+      .filter-group input[type=checkbox]:first-child + label {
+        border-radius: 3px 3px 0 0;
+      }
+      .filter-group label:last-child {
+        border-radius: 0 0 3px 3px;
+        border: none;
+      }
+      .filter-group input[type=checkbox] {
+        display: none;
+      }
+      .filter-group input[type=checkbox] + label {
+        background-color: #ffffff;
+        display: block;
+        cursor: pointer;
+        padding: 10px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+      }
+      .filter-group input[type=checkbox] + label {
+/*        background-color: #3386c0;
+*/        opacity: 0.8;
+      }
+      .filter-group input[type=checkbox]:checked + label {
+/*        background-color: #ffffff;
+*/        opacity: 1;
+      }
+      /*.filter-group input[type=checkbox]:checked + label:before {
+        content: '✔';
+        margin-right: 5px;
+      }*/
     </style>
 
     <div id='map'></div>
+    <nav id='filter-group' class='filter-group'></nav>
 
     <div class='map-overlay' id='features'><h2>Bay Area Bike Shares</h2><div id='pd'><p>Hover over a bike or dock for information!</p></div></div>
 
 
-    <div id='legend' class='legend'>
+    <!-- <div id='legend' class='legend'>
       <h4>Legend</h4>
       <div><img src="harbor-blue-11.svg"> Ford GoBike Docking Station</div>
       <div><img src="harbor-black-11.svg" > JUMP e-Bike Charging Station</div>
       <div><img src="bicycle-black-15.svg"> Available JUMP e-Bike</div>
       <div><img src="harbor-green-11.svg"> BRite Bike Docking Station</div>
       <div><img src="bicycle-green-15.svg"> Available BRite Bike</div>
-    </div>
+    </div> -->
 
     <script>
       mapboxgl.accessToken = 'pk.eyJ1IjoiamFycm9kaHN1IiwiYSI6ImNqczNxNHhtNjAyOXE0NG8xcnJpeW1hcXUifQ.SoYjjAcKto7ld-X19RE0KQ';
       var bounds = [
-        [-123.519052, 37.100180], // Southwest coordinates
-        [-121.623270, 38.852946]  // Northeast coordinates
+        [-123.519052, 36.893393], // Southwest coordinates
+        [-121.208455, 38.852946]  // Northeast coordinates
       ];
+      var filterGroup = document.getElementById('filter-group');
       const map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/jarrodhsu/cjudeshs10l971gupubdjmq21',
         center: [-122.443, 37.753],
         zoom: 11.5,
         maxZoom: 17,
-        minZoom: 9,
+        //minZoom: 9,
         maxBounds: bounds
       });
 
@@ -84,43 +127,145 @@
           closeOnClick: false
         });
 
+        function getData(url, type) {
+          var jbjson = (function () {
+            var jbjson = null;
+            $.ajax({
+              'async': false,
+              'global': false,
+              'url': url,
+              'dataType': "json",
+              'success': function (jbdata) {
+                jbjson = jbdata;
+              }
+            });
+            return jbjson;
+          })(); 
+          var jbjsonFeatures = [];
+          jbjson['data'][type].forEach(function(point){
+            var lat = point.lat;
+            var lon = point.lon;
+            var feature = {type: 'Feature',
+              properties: point,
+              geometry: {
+                type: 'Point',
+                coordinates: [lon,lat]
+              }
+            };
+            jbjsonFeatures.push(feature);
+          });
+          var jbgeoJson = { type: 'FeatureCollection', features: jbjsonFeatures };
+          return jbgeoJson
+        }
 
-        //FORD GO BIKES
-        map.addSource('gobike', { type: 'geojson', data: 'https://raw.githubusercontent.com/jarrodhsu/mapbox/master/gobike.geojson' });
-        map.addLayer({
-          "id": "gobike",
-          "type": "symbol",
-          "source": "gobike",
-          "layout": {
-            "icon-image": "harbor-blue-11" 
+        //JUMP BIKES
+        
+        
+        map.addSource('jumpbike', { type: 'geojson', data: getData('https://sf.jumpbikes.com/opendata/free_bike_status.json', 'bikes')});
+        map.addSource('britebike', { type: 'geojson', data: getData('https://britebikes.socialbicycles.com/opendata/free_bike_status.json', 'bikes')});
+        map.addSource('britestation', { type: 'geojson', data: getData('https://britebikes.socialbicycles.com/opendata/station_information.json', 'stations')});
+        map.addSource('gobike', { type: 'geojson', data: getData('https://gbfs.fordgobike.com/gbfs/en/station_information.json', 'stations')});
+        map.addSource('jumpstation', { type: 'geojson', data: getData('https://sf.jumpbikes.com/opendata/station_information.json', 'stations')});
+         
+
+        // Add a layer for this symbol type if it hasn't been added already.
+        ['gobike', 'jumpbike', 'jumpstation', 'britebike', 'britestation'].forEach(function(layer) {
+          if (!map.getLayer(layer)) {
+            map.addLayer({
+              "id": layer,
+              "type": "symbol",
+              "source": layer,
+              "layout": {
+                "icon-image": layer,
+              },
+            });
+            id = '';
+            switch(layer) {
+              case 'gobike':
+                id = 'Ford GoBike Docking Station';
+                break;
+              case 'jumpbike':
+                id = 'Available JUMP e-Bike';
+                break;
+              case 'jumpstation':
+                id = 'JUMP e-Bike Charging Station';
+                break;
+              case 'britebike':
+                id = 'Available BRite Bike';
+                break;
+              case 'britestation':
+                id = 'BRite Bike Docking Station';
+                break;
+            }
+           
+            // Add checkbox and label elements for the layer.
+            var input = document.createElement('input');
+            input.type = 'checkbox';
+            input.id = layer;
+            input.checked = true;
+            filterGroup.appendChild(input);
+             
+            var label = document.createElement('label');
+            label.setAttribute('for', layer);
+            label.innerHTML = "<img src=" + layer + ".svg height='15' width='15'> " + id;
+            filterGroup.appendChild(label);
+             
+            // When the checkbox changes, update the visibility of the layer.
+            input.addEventListener('change', function(e) {
+              map.setLayoutProperty(layer, 'visibility',
+              e.target.checked ? 'visible' : 'none');
+            });
           }
         });
-        var gbjson = (function () {
-          var gbjson = null;
-          $.ajax({
-            'async': false,
-            'global': false,
-            'url': "https://gbfs.fordgobike.com/gbfs/en/station_status.json",
-            'dataType': "json",
-            'success': function (gbdata) {
-              gbjson = gbdata;
-            },
-            'error': function (gb) {
-              gbjson = gb;
-            }
-          });
-          return gbjson;
-        })(); 
-        map.on('mouseenter', 'gobike', function(e) {
+
+
+
+          function descrip(url, f) {
+          var json = (function () {
+            var json = null;
+            $.ajax({
+              'async': false,
+              'global': false,
+              'url': url,
+              'dataType': "json",
+              'success': function (data) {
+                json = data;
+              }
+            });
+            return json;
+          })(); 
+          return json['data']['stations'].find(f)['num_bikes_available'] + " bikes available";
+        }
+        
+        //BRITE STATION
+        map.on('mouseenter', 'britestation', function(e) {
           map.getCanvas().style.cursor = 'pointer';
           function id(station) { return station['station_id'] == e.features[0].properties.station_id;}
           var coordinates = e.features[0].geometry.coordinates.slice();
-          var description = gbjson['data']['stations'].find(id)['num_bikes_available'] + " bikes available";
+          var description = descrip('https://britebikes.socialbicycles.com/opendata/station_status.json', id);
           while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
             coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
           }
           popup.setLngLat(coordinates)
-          .setHTML(description)
+          .setHTML(description) //change to make popup longer
+          .addTo(map);
+        });
+        map.on('mouseleave', 'britestation', function() {
+          map.getCanvas().style.cursor = '';
+          popup.remove();
+        });
+
+        //FORD GOBIKE
+        map.on('mouseenter', 'gobike', function(e) {
+          map.getCanvas().style.cursor = 'pointer';
+          function id(station) { return station['station_id'] == e.features[0].properties.station_id;}
+          var coordinates = e.features[0].geometry.coordinates.slice();
+          var description = descrip('https://gbfs.fordgobike.com/gbfs/en/station_status.json', id);
+          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+          }
+          popup.setLngLat(coordinates)
+          .setHTML(description) //change to make popup longer
           .addTo(map);
         });
         map.on('mouseleave', 'gobike', function() {
@@ -128,40 +273,17 @@
           popup.remove();
         });
 
-
-        //JUMP STATIONS
-        map.addSource('jumpstation', { type: 'geojson', data: 'https://raw.githubusercontent.com/jarrodhsu/mapbox/master/jump.geojson' });
-        map.addLayer({
-          "id": "jumpstation",
-          "type": "symbol",
-          "source": "jumpstation",
-          "layout": {
-            "icon-image": "harbor-black-11" 
-          }
-        });
-        var jsjson = (function () {
-          var jsjson = null;
-          $.ajax({
-            'async': false,
-            'global': false,
-            'url': "https://sf.jumpbikes.com/opendata/station_status.json",
-            'dataType': "json",
-            'success': function (jsdata) {
-              jsjson = jsdata;
-            }
-          });
-          return jsjson;
-        })(); 
+        //JUMP STATION
         map.on('mouseenter', 'jumpstation', function(e) {
           map.getCanvas().style.cursor = 'pointer';
           function id(station) { return station['station_id'] == e.features[0].properties.station_id;}
           var coordinates = e.features[0].geometry.coordinates.slice();
-          var description = jsjson['data']['stations'].find(id)['num_bikes_available'] + " bikes available";
+          var description = descrip('https://sf.jumpbikes.com/opendata/station_status.json', id);
           while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
             coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
           }
           popup.setLngLat(coordinates)
-          .setHTML(description)
+          .setHTML(description) //change to make popup longer
           .addTo(map);
         });
         map.on('mouseleave', 'jumpstation', function() {
@@ -169,100 +291,7 @@
           popup.remove();
         });
 
-
-
-        //JUMP BIKES
-        var jbjson = (function () {
-          var jbjson = null;
-          $.ajax({
-            'async': false,
-            'global': false,
-            'url': "https://sf.jumpbikes.com/opendata/free_bike_status.json",
-            'dataType': "json",
-            'success': function (jbdata) {
-              jbjson = jbdata;
-            }
-          });
-          return jbjson;
-        })(); 
-        var jbjsonFeatures = [];
-        jbjson['data']['bikes'].forEach(function(point){
-            var lat = point.lat;
-            var lon = point.lon;
-            var feature = {type: 'Feature',
-                properties: point,
-                geometry: {
-                    type: 'Point',
-                    coordinates: [lon,lat]
-                }
-            };
-            jbjsonFeatures.push(feature);
-        });
-        var jbgeoJson = { type: 'FeatureCollection', features: jbjsonFeatures };
-        map.addSource('jumpbike', { type: 'geojson', data: jbgeoJson});
-        map.addLayer({
-          "id": "jumpbike",
-          "type": "symbol",
-          "source": "jumpbike",
-          "layout": {
-            "icon-image": "bicycle-black-15"
-          }
-        });
-        map.on('mouseenter', 'jumpbike', function(e) {
-          map.getCanvas().style.cursor = 'pointer';
-          var coordinates = e.features[0].geometry.coordinates.slice();
-          var description = "battery level: " + e.features[0].properties.jump_ebike_battery_level;
-          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-          }
-          popup.setLngLat(coordinates)
-          .setHTML(description)
-          .addTo(map);
-        });
-        map.on('mouseleave', 'jumpbike', function() {
-          map.getCanvas().style.cursor = '';
-          popup.remove();
-        });
-
-
-
-        //BRITE BIKES
-        var bbjson = (function () {
-          var bbjson = null;
-          $.ajax({
-            'async': false,
-            'global': false,
-            'url': "https://britebikes.socialbicycles.com/opendata/free_bike_status.json",
-            'dataType': "json",
-            'success': function (bbdata) {
-              bbjson = bbdata;
-            }
-          });
-          return bbjson;
-        })(); 
-        var bbjsonFeatures = [];
-        bbjson['data']['bikes'].forEach(function(point){
-            var lat = point.lat;
-            var lon = point.lon;
-            var feature = {type: 'Feature',
-                properties: point,
-                geometry: {
-                    type: 'Point',
-                    coordinates: [lon,lat]
-                }
-            };
-            bbjsonFeatures.push(feature);
-        });
-        var bbgeoJson = { type: 'FeatureCollection', features: bbjsonFeatures };
-        map.addSource('britebike', { type: 'geojson', data: bbgeoJson});
-        map.addLayer({
-          "id": "britebike",
-          "type": "symbol",
-          "source": "britebike",
-          "layout": {
-            "icon-image": "bicycle-green-15"
-          }
-        });
+        //BRITE BIKE
         map.on('mouseenter', 'britebike', function(e) {
           map.getCanvas().style.cursor = 'pointer';
           var coordinates = e.features[0].geometry.coordinates.slice();
@@ -279,63 +308,11 @@
           popup.remove();
         });
 
-    
-
-      //BRITE STATIONS
-        var bsjson0 = (function () {
-          var bsjson0 = null;
-          $.ajax({
-            'async': false,
-            'global': false,
-            'url': "https://britebikes.socialbicycles.com/opendata/station_information.json",
-            'dataType': "json",
-            'success': function (bsdata0) {
-              bsjson0 = bsdata0;
-            }
-          });
-          return bsjson0;
-        })(); 
-        var bsjsonFeatures = [];
-        bsjson0['data']['stations'].forEach(function(point){
-            var lat = point.lat;
-            var lon = point.lon;
-            var feature = {type: 'Feature',
-                properties: point,
-                geometry: {
-                    type: 'Point',
-                    coordinates: [lon,lat]
-                }
-            };
-            bsjsonFeatures.push(feature);
-        });
-        var bsgeoJson = { type: 'FeatureCollection', features: bsjsonFeatures };
-        map.addSource('britestation', { type: 'geojson', data: bsgeoJson});
-        map.addLayer({
-          "id": "britestation",
-          "type": "symbol",
-          "source": "britestation",
-          "layout": {
-            "icon-image": "harbor-green-11" 
-          }
-        });
-        var bsjson = (function () {
-          var bsjson = null;
-          $.ajax({
-            'async': false,
-            'global': false,
-            'url': "https://britebikes.socialbicycles.com/opendata/station_status.json",
-            'dataType': "json",
-            'success': function (bsdata) {
-              bsjson = bsdata;
-            }
-          });
-          return bsjson;
-        })(); 
-        map.on('mouseenter', 'britestation', function(e) {
+        //JUMP BIKE
+        map.on('mouseenter', 'jumpbike', function(e) {
           map.getCanvas().style.cursor = 'pointer';
-          function id(station) { return station['station_id'] == e.features[0].properties.station_id;}
           var coordinates = e.features[0].geometry.coordinates.slice();
-          var description = bsjson['data']['stations'].find(id)['num_bikes_available'] + " bikes available";
+          var description = "battery level: " + e.features[0].properties.jump_ebike_battery_level;
           while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
             coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
           }
@@ -343,12 +320,13 @@
           .setHTML(description)
           .addTo(map);
         });
-        map.on('mouseleave', 'britestation', function() {
+        map.on('mouseleave', 'jumpbike', function() {
           map.getCanvas().style.cursor = '';
           popup.remove();
         });
+    
       });
-      var stateLegendEl = document.getElementById('legend');
+      //var stateLegendEl = document.getElementById('legend');
 
       //aggregate filter fixlegend
     </script>
