@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset='utf-8' />
-    <title>Bay Area Bikeshares</title>
+    <title>Bay Area Bike Shares</title>
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
     <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js'></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -27,14 +27,14 @@
         font: 17px/12px 'Helvetica Neue', Arial, Helvetica, sans-serif;
         padding: 15px;
         position: absolute;
-        opacity: 0.8;
+        opacity: 0.9;
         right: 30px;
         z-index: 1;
       }
 
 
       .filter-group {
-        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        font: 12px/15px 'Helvetica Neue', Arial, Helvetica, sans-serif;
         font-weight: 400;
         position: absolute;
         bottom: 40px;
@@ -86,11 +86,15 @@
         container: 'map',
         style: 'mapbox://styles/jarrodhsu/cjudeshs10l971gupubdjmq21',
         center: [-122.443, 37.753],
-        zoom: 11.5,
-        maxZoom: 17,
+        zoom: 8.5,
+        maxZoom: 18,
         //minZoom: 9,
-        maxBounds: bounds
-      });
+        maxBounds: bounds,
+        attributionControl: false
+      }).addControl(new mapboxgl.AttributionControl({
+      	compact: true,
+      	customAttribution: ['sources:','britebikes.socialbicycles.com/opendata', 'sf.jumpbikes.com/opendata', 'gbfs.fordgobike.com/gbfs/gbfs.json']
+      }));
 
       map.on('load', function () {
         var popup = new mapboxgl.Popup({
@@ -158,21 +162,27 @@
               },
             });
             id = '';
+            city = '';
             switch(layer) {
               case 'gobike':
                 id = 'Ford GoBike Docking Station';
+                city = 'San Francisco, Oakland, Berkeley, San Jose'
                 break;
               case 'jumpbike':
                 id = 'Available JUMP e-Bike';
+                city = 'San Francisco'
                 break;
               case 'jumpstation':
                 id = 'JUMP e-Bike Charging Station';
+                city = 'San Francisco'
                 break;
               case 'britebike':
                 id = 'Available BRite Bike';
+                city = 'San Ramon'
                 break;
               case 'britestation':
                 id = 'BRite Bike Docking Station';
+                city = 'San Ramon'
                 break;
             }
            
@@ -185,7 +195,7 @@
              
             var label = document.createElement('label');
             label.setAttribute('for', layer);
-            label.innerHTML = "<img src=" + layer + ".svg height='15' width='15'> " + id;
+            label.innerHTML = "<img src=" + layer + ".svg height='15' width='15'> " + id + "</br><font size = 0.2>" + city + "</font>";
             filterGroup.appendChild(label);
              
             // When the checkbox changes, update the visibility of the layer.
@@ -347,7 +357,7 @@
     
       });
 
-      //aggregate filter fixlegend
+      //aggregate ? tone down the red , style popups ?
     </script>
 
   </body>
